@@ -1,0 +1,9 @@
+apiVersion: deploy.kubesailmaker.io/v1alpha1
+kind: ReleaseRequest
+metadata:
+  name: release-2
+spec:
+  apps:
+    - name: adimono
+      version: 1.0
+
