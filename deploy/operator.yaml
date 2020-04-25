@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: request-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: request-operator
+  template:
+    metadata:
+      labels:
+        name: request-operator
+    spec:
+      serviceAccountName: request-operator
+      containers:
+        - name: request-operator
+          # Replace this with the built image name
+          image: REPLACE_IMAGE
+          command:
+          - request-operator
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "request-operator"
