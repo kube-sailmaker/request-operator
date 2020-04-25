@@ -1,3 +1,6 @@
+## Release-Request-Operator
+
+Acts on release request custom resource object to initiate deployment
 
 ### Create New Project
 ```
@@ -54,5 +57,4 @@ kubectl get deployment
 ```
 kubectl get jobs,pods
 ```
-
 
