@@ -147,7 +147,7 @@ func newJobForCR(cr *deployv1alpha1.ReleaseRequest) *batchv1.Job {
 		"app": cr.Name,
 	}
 	backoffLimit := int32(1)
-	deadlineSeconds:= int64(30)
+	deadlineSeconds:= int64(3600)
 	cleanupAfterSeconds := int32(300)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
