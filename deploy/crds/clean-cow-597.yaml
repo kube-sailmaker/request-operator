@@ -1,0 +1,18 @@
+apiVersion: deploy.kubesailmaker.io/v1alpha1
+kind: ReleaseRequest
+metadata:
+  annotations:
+    deploy.kubesailmaker.io/payload: |
+      {"name":"clean-cow-597","namespace":"default","spec":{"release-namespace":"clean-cow-597","apps":[{"name":"agiano","version":"1.0"},{"name":"miudya","version":"1.3"}]},"kind":"ReleaseRequest","version":"v1alpha1","crd-name":"releaserequests","group-name":"deploy.kubesailmaker.io"}
+    deploy.kubesailmaker.io/request-id: b331d589-c010-4eb6-ae74-01ecc95dba51
+  labels:
+    category: release
+  name: clean-cow-597
+  namespace: default
+spec:
+  apps:
+    - name: agiano
+      version: "1.0"
+    - name: miudya
+      version: "1.3"
+  release-namespace: clean-cow-597

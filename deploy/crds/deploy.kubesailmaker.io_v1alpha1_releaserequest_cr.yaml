@@ -1,7 +1,0 @@
-apiVersion: deploy.kubesailmaker.io/v1alpha1
-kind: ReleaseRequest
-metadata:
-  name: example-releaserequest
-spec:
-  # Add fields here
-  size: 3

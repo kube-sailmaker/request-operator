@@ -2,7 +2,7 @@ package releaserequest
 
 import (
 	"context"
-
+	batchv1 "k8s.io/api/batch/v1"
 	deployv1alpha1 "github.com/kube-sailmaker/request-operator/pkg/apis/deploy/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	_ "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -83,6 +83,7 @@ type ReconcileReleaseRequest struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileReleaseRequest) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling ReleaseRequest")
 
@@ -100,52 +101,77 @@ func (r *ReconcileReleaseRequest) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
-
-	// Set ReleaseRequest instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
-		return reconcile.Result{}, err
+	if instance.Status.Code != "" {
+		reqLogger.Info("it is not new, so skipping")
+		return reconcile.Result{Requeue: false}, nil
 	}
 
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+	reqLogger.Info("Processing this new CRD ", "Instance Name", instance.Name)
+
+	for _, app := range instance.Spec.Apps {
+		reqLogger.Info("Queue Job to handle these all", "App Name", app.Name, "App Version", app.Version)
+	}
+
+	// Define a new Pod object
+	job := newJobForCR(instance)
+
+	// Set ReleaseRequest instance as the owner and controller
+	//if err := controllerutil.SetControllerReference(instance, job, r.scheme); err != nil {
+	//	return reconcile.Result{}, err
+	//}
+
+	// Check if this Job already exists
+	found := &batchv1.Job{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
+		reqLogger.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+		err = r.client.Create(context.TODO(), job)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 
-		// Pod created successfully - don't requeue
+		// Job created successfully - don't requeue
 		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	// Job already exists - don't requeue
+	reqLogger.Info("Skip reconcile: Job already exists", "Job.Namespace", found.Namespace, "Job.Name", found.Name)
 	return reconcile.Result{}, nil
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *deployv1alpha1.ReleaseRequest) *corev1.Pod {
+// newJobForCR returns a busybox pod with the same name/namespace as the cr
+func newJobForCR(cr *deployv1alpha1.ReleaseRequest) *batchv1.Job {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
-	return &corev1.Pod{
+	backoffLimit := int32(1)
+	deadlineSeconds:= int64(30)
+	cleanupAfterSeconds := int32(300)
+	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
+			Name:      cr.Name + "-release-job",
 			Namespace: cr.Namespace,
 			Labels:    labels,
 		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &backoffLimit,
+			ActiveDeadlineSeconds: &deadlineSeconds,
+			Selector: &metav1.LabelSelector{
+
+			},
+			TTLSecondsAfterFinished: &cleanupAfterSeconds,
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyOnFailure,
+					Containers: []corev1.Container{
+						{
+							Name: "busybox",
+							Image: "busybox",
+							Command: []string{"sleep", "60"},
+						},
+					},
 				},
 			},
 		},

@@ -12,6 +12,8 @@ type ReleaseRequestSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	Namespace string    `json:"release-namespace"`
+	Apps      []AppItem `json:"apps"`
 }
 
 // ReleaseRequestStatus defines the observed state of ReleaseRequest
@@ -19,6 +21,17 @@ type ReleaseRequestStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type AppItem struct {
+	Name     string            `json:"name"`
+	Alias    string            `json:"alias"`
+	Version  string            `json:"version"`
+	Metadata map[string]string `json:"metadata""`
+	Status   string            `json:"status"`
+	Message  string            `json:"message"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
