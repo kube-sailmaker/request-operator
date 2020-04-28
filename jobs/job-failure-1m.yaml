@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-succeed-1m
+spec:
+  template:
+    spec:
+      containers:
+        - name: busybox
+          image: busybox
+          command: ["/bin/sh",  "-c", "sleep 60; exit 1"]
+      restartPolicy: Never
+  backoffLimit: 4
